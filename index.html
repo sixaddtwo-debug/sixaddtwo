@@ -30,6 +30,15 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9997;
+        }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--dark); }
@@ -488,7 +497,86 @@
             border-color: var(--rose);
         }
 
-        /* Quote Section */
+        /* Lightbox Modal */
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            padding: 2rem;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.4s ease;
+        }
+
+        .lightbox.active .lightbox-content {
+            transform: scale(1);
+        }
+
+        .lightbox-img {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 20px;
+        }
+
+        .lightbox-info {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+
+        .lightbox-info h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .lightbox-info p {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -3rem;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .lightbox-close:hover {
+            background: var(--rose);
+            border-color: var(--rose);
+            transform: rotate(90deg);
+        }
         .quote-section {
             padding: 8rem 5%;
             text-align: center;
@@ -683,6 +771,43 @@
 
         footer span { color: var(--rose); }
 
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--rose);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s ease, width 0.3s ease, height 0.3s ease, border-color 0.3s;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+
+        .custom-cursor.hover {
+            width: 50px;
+            height: 50px;
+            background: rgba(225,29,72,0.2);
+            border-color: var(--rose-light);
+        }
+
+        .cursor-dot {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: var(--rose);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Magnetic Button Effect */
+        .btn, .social-item, .gallery-card {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         /* Animations */
         .reveal {
             opacity: 0;
@@ -700,8 +825,16 @@
         .reveal-delay-3 { transition-delay: 0.3s; }
         .reveal-delay-4 { transition-delay: 0.4s; }
 
+        /* Parallax Hero */
+        .hero-img-wrapper {
+            will-change: transform;
+        }
+
         /* Responsive */
+        /* Hide custom cursor on mobile */
         @media (max-width: 1024px) {
+            .custom-cursor, .cursor-dot { display: none; }
+        }
             .hero {
                 grid-template-columns: 1fr;
                 padding-top: 100px;
@@ -832,6 +965,10 @@
     </style>
 </head>
 <body>
+    <!-- Custom Cursor -->
+    <div class="custom-cursor" id="cursor"></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+
     <!-- Loader -->
     <div class="loader" id="loader">
         <div class="loader-text">SIX ADD <span>TWO</span></div>
@@ -934,7 +1071,7 @@
                     <h3>KLCC Evenings</h3>
                     <p>City lights and iconic views</p>
                     <div class="gallery-card-hidden">
-                        <a href="#" class="btn-small">View Details →</a>
+                        <span class="btn-small">Click to View ↗</span>
                     </div>
                 </div>
             </div>
@@ -945,7 +1082,7 @@
                     <h3>Gym Session</h3>
                     <p>Push your limits daily</p>
                     <div class="gallery-card-hidden">
-                        <a href="#" class="btn-small">View Details →</a>
+                        <span class="btn-small">Click to View ↗</span>
                     </div>
                 </div>
             </div>
@@ -956,7 +1093,7 @@
                     <h3>Bukit Jalil Park</h3>
                     <p>Where fitness meets nature</p>
                     <div class="gallery-card-hidden">
-                        <a href="#" class="btn-small">View Details →</a>
+                        <span class="btn-small">Click to View ↗</span>
                     </div>
                 </div>
             </div>
@@ -967,12 +1104,24 @@
                     <h3>Starhill Gallery</h3>
                     <p>Luxury vibes in the city</p>
                     <div class="gallery-card-hidden">
-                        <a href="#" class="btn-small">View Details →</a>
+                        <span class="btn-small">Click to View ↗</span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+            <img src="" alt="" class="lightbox-img" id="lightboxImg">
+            <div class="lightbox-info">
+                <h3 id="lightboxTitle"></h3>
+                <p id="lightboxDesc"></p>
+            </div>
+        </div>
+    </div>
 
     <!-- Quote -->
     <section class="quote-section" id="philosophy">
@@ -1062,7 +1211,91 @@
 
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-        // Smooth scroll
+        // Lightbox
+        const galleryData = {
+            '01_KLCC.png': { title: 'KLCC Evenings', desc: 'The iconic Petronas Towers at sunset — my favorite spot in Kuala Lumpur for evening walks and city vibes.' },
+            '02_Gym.png': { title: 'Gym Session', desc: 'Training hard, staying consistent. Every rep counts when you\'re building your best self.' },
+            '03_Bukit_Jalil_Park.jpg': { title: 'Bukit Jalil Park', desc: 'Where nature meets fitness. Morning runs here are unbeatable — fresh air, green views, pure energy.' },
+            '04_Starhill.jpg': { title: 'Starhill Gallery', desc: 'Luxury lifestyle in the heart of KL. Shopping, dining, and soaking in the premium vibes.' }
+        };
+
+        function openLightbox(imgSrc) {
+            const lightbox = document.getElementById('lightbox');
+            const img = document.getElementById('lightboxImg');
+            const title = document.getElementById('lightboxTitle');
+            const desc = document.getElementById('lightboxDesc');
+            
+            const data = galleryData[imgSrc] || { title: 'Gallery Image', desc: '' };
+            
+            img.src = imgSrc;
+            title.textContent = data.title;
+            desc.textContent = data.desc;
+            
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // Close on backdrop click
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if (e.target.id === 'lightbox') closeLightbox();
+        });
+
+        // Attach click handlers to gallery cards
+        document.querySelectorAll('.gallery-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const img = card.querySelector('img');
+                if (img) openLightbox(img.src);
+            });
+        });
+
+        // Custom Cursor
+        const cursor = document.getElementById('cursor');
+        const cursorDot = document.getElementById('cursorDot');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            cursorDot.style.left = e.clientX + 'px';
+            cursorDot.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('a, button, .gallery-card, .btn, .social-item').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // Parallax on scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const heroImg = document.querySelector('.hero-img-wrapper');
+            if (heroImg && scrolled < window.innerHeight) {
+                heroImg.style.transform = `translateY(${scrolled * 0.3}px)`;
+            }
+        });
+
+        // Magnetic button effect
+        document.querySelectorAll('.btn, .social-item').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = '';
+            });
+        });
+
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
